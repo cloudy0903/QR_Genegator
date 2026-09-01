@@ -1,291 +1,251 @@
 <script>
   import { onMount } from 'svelte';
-  import QRCodeStyling from 'qr-code-styling';
-  import { fade, fly } from 'svelte/transition';
+  import {
+    activeToolSlug,
+    selectedCategory,
+    searchQuery,
+    favoriteTools,
+    recentTools,
+    isDarkMode
+  } from './stores/appStore.js';
+  import { CATEGORIES, TOOLS, searchTools, getCategoryById } from './tools/registry.js';
 
-  // --- STATE & KONFIGURASI ---
-  let urlData = ""; 
-  let dotsType = "rounded";
-  let cornersType = "extra-rounded";
-  let fgColor = "#4f46e5"; 
-  let bgColor = "#ffffff";
-  let logoImage = null;
-  let logoSize = 0.3;
-  let logoMargin = 10;
+  import Navbar from './components/Navbar.svelte';
+  import Hero from './components/Hero.svelte';
+  import ToolCard from './components/ToolCard.svelte';
+  import Footer from './components/Footer.svelte';
+  import Toast from './components/Toast.svelte';
+  import ToolDispatcher from './tools/ToolDispatcher.svelte';
 
-  let qrCode;
-  let qrContainer;
-  let isDark = false;
+  $: filteredTools = $searchQuery.trim()
+    ? searchTools($searchQuery)
+    : ($selectedCategory === 'all'
+        ? TOOLS
+        : TOOLS.filter(t => t.category === $selectedCategory));
 
-  onMount(() => {
-    qrCode = new QRCodeStyling({
-      width: 320,
-      height: 320,
-      data: urlData || " ", 
-      image: logoImage,
-      dotsOptions: { color: fgColor, type: dotsType },
-      backgroundOptions: { color: bgColor },
-      cornersSquareOptions: { color: fgColor, type: cornersType },
-      cornersDotOptions: { color: fgColor, type: "dot" },
-      imageOptions: { crossOrigin: "anonymous", margin: logoMargin, imageSize: logoSize }
-    });
-    qrCode.append(qrContainer);
+  $: popularTools = TOOLS.filter(t => t.is_popular);
 
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      isDark = true;
-    }
-  });
+  $: favToolsList = TOOLS.filter(t => $favoriteTools.includes(t.slug));
 
-  $: if (qrCode) {
-    qrCode.update({
-      data: urlData || " ",
-      image: logoImage,
-      dotsOptions: { color: fgColor, type: dotsType },
-      backgroundOptions: { color: bgColor },
-      cornersSquareOptions: { color: fgColor, type: cornersType },
-      imageOptions: { margin: logoMargin, imageSize: logoSize }
-    });
+  $: recentToolsList = $recentTools
+    .map(item => TOOLS.find(t => t.slug === item.slug))
+    .filter(Boolean);
+
+  function resetCategory() {
+    $selectedCategory = 'all';
+    $searchQuery = '';
   }
 
-  function handleLogoUpload(event) {
-    const file = event.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => logoImage = e.target.result;
-      reader.readAsDataURL(file);
+  // Sync dark mode class on document html
+  $: if (typeof document !== 'undefined') {
+    if ($isDarkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
     }
   }
-
-  const download = (ext) => {
-    qrCode.download({ name: "qr-generator-hasil", extension: ext });
-  };
-
-  const toggleTheme = () => isDark = !isDark;
 </script>
 
-<div class="min-h-screen transition-all duration-500 font-sans selection:bg-indigo-500/30 {isDark ? 'bg-slate-950 text-slate-200' : 'bg-slate-50 text-slate-900'}">
+<div class="min-h-screen flex flex-col font-sans transition-colors duration-300 selection:bg-indigo-500/30 {$isDarkMode ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'}">
   
-  <div class="max-w-6xl mx-auto px-6 py-10">
-    
-    <!-- HEADER & THEME TOGGLE -->
-    <header class="flex justify-between items-center mb-16">
-      <div class="flex items-center gap-4">
-        <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-600 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/30 transition-transform hover:scale-105 duration-300">
-          <i class="ri-qr-code-line text-4xl text-white"></i>
-        </div>
-        <div>
-          <h1 class="text-4xl font-black tracking-tight {isDark ? 'text-white' : 'text-slate-900'}">QR Generator</h1>
-          <p class="text-sm font-bold uppercase tracking-[0.2em] text-indigo-500">Premium Edition</p>
-        </div>
-      </div>
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <Toast />
 
-      <!-- MODERN THEME TOGGLE (iOS Style) -->
-      <button 
-        on:click={toggleTheme}
-        class="relative w-20 h-10 rounded-full p-1 transition-all duration-300 focus:outline-none {isDark ? 'bg-slate-800 ring-1 ring-white/10' : 'bg-slate-200 ring-1 ring-slate-300'}"
-      >
-        <div class="absolute inset-0 flex items-center justify-between px-3 text-sm opacity-50">
-          <i class="ri-moon-line"></i>
-          <i class="ri-sun-line"></i>
-        </div>
-        <div 
-          class="relative w-8 h-8 rounded-full transition-transform duration-500 flex items-center justify-center shadow-md {isDark ? 'translate-x-10 bg-slate-900 text-yellow-400' : 'translate-x-0 bg-white text-indigo-600'}"
-        >
-          {#if isDark}
-            <i class="ri-moon-fill text-lg"></i>
-          {:else}
-            <i class="ri-sun-fill text-lg"></i>
-          {/if}
-        </div>
-      </button>
-    </header>
+  <!-- TOP NAVBAR -->
+  <Navbar />
 
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
-      
-      <!-- PANEL PENGATURAN (KIRI) -->
-      <section class="lg:col-span-7 space-y-8" in:fly={{ x: -20, duration: 600 }}>
-        <div class="p-8 md:p-10 rounded-[2.5rem] shadow-2xl border transition-all duration-500 {isDark ? 'bg-slate-900/50 border-white/5 backdrop-blur-xl' : 'bg-white border-slate-200'}">
-          <h2 class="text-2xl font-bold mb-10 flex items-center gap-4">
-            <i class="ri-equalizer-line text-3xl text-indigo-500"></i>
-            Kustomisasi QR
-          </h2>
+  <!-- MAIN VIEW -->
+  <main class="flex-1">
+    {#if $activeToolSlug}
+      <!-- ACTIVE TOOL DETAIL VIEW -->
+      <ToolDispatcher />
+    {:else}
+      <!-- HOMEPAGE (PRD Section 8 - 10) -->
+      <Hero />
 
-          <div class="space-y-10">
-            <!-- Data Utama -->
-            <div class="space-y-4">
-              <label class="flex items-center gap-3 text-sm font-black uppercase tracking-widest {isDark ? 'text-slate-500' : 'text-slate-400'}" for="url">
-                <i class="ri-link text-xl text-indigo-500"></i> Teks atau URL
-              </label>
-              <input 
-                id="url"
-                type="text" 
-                bind:value={urlData}
-                placeholder="Masukkan tautan atau pesan Anda..."
-                class="w-full px-8 py-5 rounded-3xl border transition-all {isDark ? 'bg-slate-800/50 border-slate-700 text-white focus:border-indigo-500' : 'bg-slate-50 border-slate-200 text-slate-900 focus:border-indigo-500'} focus:outline-none focus:ring-4 focus:ring-indigo-500/10 text-xl shadow-inner"
-              />
-            </div>
-
-            <!-- Gaya & Bentuk -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div class="space-y-4">
-                <label class="flex items-center gap-3 text-sm font-black uppercase tracking-widest {isDark ? 'text-slate-500' : 'text-slate-400'}" for="dots">
-                  <i class="ri-layout-grid-line text-xl text-indigo-500"></i> Pola Matriks
-                </label>
-                <select id="dots" bind:value={dotsType} class="w-full px-6 py-4 rounded-2xl border transition-all appearance-none cursor-pointer text-base {isDark ? 'bg-slate-800/50 border-slate-700 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'}">
-                  <option value="square">Kotak Standar</option>
-                  <option value="dots">Titik Bulat</option>
-                  <option value="rounded">Halus Melengkung</option>
-                  <option value="extra-rounded">Ekstra Melengkung</option>
-                  <option value="classy">Gaya Klasik</option>
-                </select>
-              </div>
-              <div class="space-y-4">
-                <label class="flex items-center gap-3 text-sm font-black uppercase tracking-widest {isDark ? 'text-slate-500' : 'text-slate-400'}" for="corners">
-                  <i class="ri-focus-2-line text-xl text-indigo-500"></i> Bentuk Sudut
-                </label>
-                <select id="corners" bind:value={cornersType} class="w-full px-6 py-4 rounded-2xl border transition-all appearance-none cursor-pointer text-base {isDark ? 'bg-slate-800/50 border-slate-700 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'}">
-                  <option value="square">Kotak</option>
-                  <option value="dot">Titik</option>
-                  <option value="extra-rounded">Ekstra Bulat</option>
-                </select>
-              </div>
-            </div>
-
-            <!-- Warna -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div class="space-y-4">
-                <label class="flex items-center gap-3 text-sm font-black uppercase tracking-widest {isDark ? 'text-slate-500' : 'text-slate-400'}" for="fg">
-                  <i class="ri-palette-line text-xl text-indigo-500"></i> Warna Pola
-                </label>
-                <div class="flex items-center gap-5 p-4 rounded-2xl border {isDark ? 'bg-slate-800/30 border-slate-700' : 'bg-slate-50 border-slate-200'}">
-                  <input id="fg" type="color" bind:value={fgColor} class="w-14 h-14 rounded-xl border-none cursor-pointer bg-transparent" />
-                  <span class="font-mono font-bold uppercase text-base">{fgColor}</span>
-                </div>
-              </div>
-              <div class="space-y-4">
-                <label class="flex items-center gap-3 text-sm font-black uppercase tracking-widest {isDark ? 'text-slate-500' : 'text-slate-400'}" for="bg">
-                  <i class="ri-paint-fill text-xl text-indigo-500"></i> Warna Latar
-                </label>
-                <div class="flex items-center gap-5 p-4 rounded-2xl border {isDark ? 'bg-slate-800/30 border-slate-700' : 'bg-slate-50 border-slate-200'}">
-                  <input id="bg" type="color" bind:value={bgColor} class="w-14 h-14 rounded-xl border-none cursor-pointer bg-transparent" />
-                  <span class="font-mono font-bold uppercase text-base">{bgColor}</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Logo -->
-            <div class="pt-8 border-t {isDark ? 'border-white/5' : 'border-slate-100'}">
-              <div class="flex justify-between items-center mb-6">
-                <label class="flex items-center gap-3 text-sm font-black uppercase tracking-widest {isDark ? 'text-slate-500' : 'text-slate-400'}" for="logo">
-                  <i class="ri-image-add-line text-xl text-indigo-500"></i> Unggah Logo
-                </label>
-                {#if logoImage}
-                  <button on:click={() => logoImage = null} class="text-xs font-bold text-rose-500 hover:underline">Hapus Logo</button>
-                {/if}
-              </div>
-              <input 
-                id="logo"
-                type="file" 
-                accept="image/*"
-                on:change={handleLogoUpload}
-                class="w-full text-sm text-slate-500 file:mr-6 file:py-4 file:px-8 file:rounded-2xl file:border-0 file:text-sm file:font-black file:uppercase file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 transition-all cursor-pointer shadow-md"
-              />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- PANEL PRATINJAU (KANAN) -->
-      <section class="lg:col-span-5 flex flex-col gap-8 sticky top-10" in:fly={{ x: 20, duration: 600 }}>
-        <div class="p-10 rounded-[3rem] shadow-2xl border transition-all duration-500 flex flex-col items-center justify-center text-center {isDark ? 'bg-slate-900 border-white/5' : 'bg-white border-slate-200'}">
-          
-          <div class="relative group mb-12">
-            <!-- Dekoratif Latar QR -->
-            <div class="absolute inset-0 bg-indigo-500/10 blur-3xl rounded-full scale-75 transition-transform group-hover:scale-110"></div>
-            
-            <div class="relative bg-white p-8 rounded-[3rem] shadow-2xl transition-all duration-500 {urlData ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'} hover:scale-[1.03] ring-1 ring-black/5">
-              <div bind:this={qrContainer} class="flex items-center justify-center overflow-hidden rounded-[2rem] bg-white"></div>
-            </div>
-
-            {#if !urlData}
-              <div class="absolute inset-0 flex flex-col items-center justify-center text-slate-400 gap-6" in:fade>
-                <i class="ri-qr-scan-2-line text-8xl opacity-20"></i>
-                <p class="text-sm font-bold uppercase tracking-[0.3em] opacity-40">Menunggu Input...</p>
-              </div>
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20 space-y-16">
+        
+        <!-- CATEGORY PILL FILTER BAR -->
+        <div class="space-y-4">
+          <div class="flex items-center justify-between">
+            <h2 class="text-lg sm:text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <i class="ri-apps-2-line text-indigo-500"></i>
+              <span>Jelajahi Kategori</span>
+            </h2>
+            {#if $selectedCategory !== 'all' || $searchQuery}
+              <button
+                on:click={resetCategory}
+                class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1"
+              >
+                <i class="ri-refresh-line"></i>
+                <span>Tampilkan Semua</span>
+              </button>
             {/if}
           </div>
 
-          <!-- TOMBOL UNDUH -->
-          <div class="grid grid-cols-2 gap-5 w-full">
-            <button 
-              on:click={() => download('png')}
-              disabled={!urlData}
-              class="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-black py-6 rounded-[1.5rem] shadow-xl shadow-indigo-500/20 transition-all active:scale-[0.97] flex items-center justify-center gap-3 text-sm tracking-widest"
+          <!-- HORIZONTAL SCROLLABLE CATEGORY PILLS -->
+          <div class="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+            <button
+              on:click={() => $selectedCategory = 'all'}
+              class="px-4 py-2 rounded-2xl text-xs font-bold transition-all shrink-0 {
+                $selectedCategory === 'all'
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/25'
+                  : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-indigo-400'
+              }"
             >
-              <i class="ri-download-2-line text-2xl"></i>
-              PNG
+              Semua Tools ({TOOLS.length})
             </button>
-            <button 
-              on:click={() => download('svg')}
-              disabled={!urlData}
-              class="flex-1 {isDark ? 'bg-slate-800 hover:bg-slate-700 text-white' : 'bg-slate-900 hover:bg-black text-white'} disabled:opacity-50 disabled:cursor-not-allowed font-black py-6 rounded-[1.5rem] shadow-xl transition-all active:scale-[0.97] flex items-center justify-center gap-3 text-sm tracking-widest"
-            >
-              <i class="ri-file-code-line text-2xl"></i>
-              SVG
-            </button>
-          </div>
 
-          <div class="mt-10 flex items-center gap-3 text-xs font-black uppercase tracking-widest opacity-40">
-            <i class="ri-checkbox-circle-fill {urlData ? 'text-green-500 animate-pulse' : 'text-slate-400'} text-xl"></i>
-            {urlData ? 'Siap untuk diunduh' : 'Input kosong'}
+            {#each CATEGORIES as cat}
+              <button
+                on:click={() => $selectedCategory = cat.id}
+                class="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl text-xs font-bold transition-all shrink-0 {
+                  $selectedCategory === cat.id
+                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/25'
+                    : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-indigo-400'
+                }"
+              >
+                <i class="{cat.icon}"></i>
+                <span>{cat.name}</span>
+              </button>
+            {/each}
           </div>
         </div>
 
-        <!-- INFO CARD -->
-        <div class="p-8 rounded-[2.5rem] border transition-all {isDark ? 'bg-indigo-900/10 border-indigo-500/20 text-indigo-300' : 'bg-indigo-50 border-indigo-100 text-indigo-700'} shadow-sm">
-          <p class="text-base leading-relaxed font-medium flex gap-4">
-            <i class="ri-information-line text-2xl text-indigo-500"></i>
-            <span>
-              <span class="font-black">Tips:</span> Gunakan format <span class="underline decoration-indigo-400 underline-offset-4">SVG</span> untuk hasil cetak ukuran besar agar tetap tajam.
-            </span>
-          </p>
-        </div>
-      </section>
+        <!-- FAVORITES SECTION (PRD Section 33) -->
+        {#if $selectedCategory === 'all' && !$searchQuery && favToolsList.length > 0}
+          <section class="space-y-4">
+            <div class="flex items-center justify-between">
+              <h2 class="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <i class="ri-star-fill text-amber-500"></i>
+                <span>Tool Favorit Anda</span>
+              </h2>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {#each favToolsList as tool (tool.slug)}
+                <ToolCard {tool} />
+              {/each}
+            </div>
+          </section>
+        {/if}
 
-    </div>
-    
-    <!-- FOOTER -->
-    <footer class="mt-24 text-center py-16 border-t {isDark ? 'border-white/5' : 'border-slate-200'}">
-       <div class="flex items-center justify-center flex-wrap gap-x-4 gap-y-6 text-sm font-black uppercase tracking-[0.3em] opacity-60">
-         <span>Dibuat dengan</span>
-         <div class="flex items-center gap-3">
-           <i class="ri-heart-fill text-rose-500 animate-pulse text-2xl drop-shadow-sm"></i>
-           <span class="opacity-40">&</span>
-           <i class="ri-cup-fill text-amber-700 text-2xl drop-shadow-sm"></i>
-         </div>
-         <span>oleh</span>
-         <span class="text-indigo-600 tracking-[0.4em] drop-shadow-sm">Sugiyanto Prasetio</span>
-       </div>
-    </footer>
+        <!-- RECENT TOOLS SECTION (PRD Section 34) -->
+        {#if $selectedCategory === 'all' && !$searchQuery && recentToolsList.length > 0}
+          <section class="space-y-4">
+            <div class="flex items-center justify-between">
+              <h2 class="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <i class="ri-history-line text-indigo-500"></i>
+                <span>Baru Saja Digunakan</span>
+              </h2>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {#each recentToolsList.slice(0, 4) as tool (tool.slug)}
+                <ToolCard {tool} />
+              {/each}
+            </div>
+          </section>
+        {/if}
 
+        <!-- POPULAR TOOLS SECTION (PRD Section 9) -->
+        {#if $selectedCategory === 'all' && !$searchQuery}
+          <section class="space-y-4">
+            <div class="flex items-center justify-between">
+              <h2 class="text-lg sm:text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <i class="ri-fire-fill text-orange-500"></i>
+                <span>Tools Populer</span>
+              </h2>
+              <span class="text-xs text-slate-400">Paling sering dipakai sehari-hari</span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {#each popularTools as tool (tool.slug)}
+                <ToolCard {tool} />
+              {/each}
+            </div>
+          </section>
+        {/if}
+
+        <!-- ALL FILTERED TOOLS GRID -->
+        <section class="space-y-4 pt-4 border-t border-slate-200 dark:border-slate-800">
+          <div class="flex items-center justify-between">
+            <h2 class="text-lg sm:text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              {#if $searchQuery}
+                <i class="ri-search-line text-indigo-500"></i>
+                <span>Hasil Pencarian: "{$searchQuery}" ({filteredTools.length})</span>
+              {:else if $selectedCategory !== 'all'}
+                {@const cat = getCategoryById($selectedCategory)}
+                <i class="{cat ? cat.icon : 'ri-tools-line'} text-indigo-500"></i>
+                <span>{cat ? cat.name : 'Kategori'} ({filteredTools.length})</span>
+              {:else}
+                <i class="ri-grid-fill text-indigo-500"></i>
+                <span>Semua Tools ({filteredTools.length})</span>
+              {/if}
+            </h2>
+          </div>
+
+          {#if filteredTools.length === 0}
+            <div class="text-center py-16 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-3">
+              <i class="ri-search-line text-4xl text-slate-300"></i>
+              <h3 class="font-bold text-slate-800 dark:text-slate-200">Tidak ada tool yang cocok</h3>
+              <p class="text-xs text-slate-500 max-w-sm mx-auto">
+                Coba gunakan kata kunci pencarian lain atau pilih kategori di bagian atas.
+              </p>
+              <button
+                on:click={resetCategory}
+                class="px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold shadow-sm"
+              >
+                Reset Pencarian
+              </button>
+            </div>
+          {:else}
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {#each filteredTools as tool (tool.slug)}
+                <ToolCard {tool} />
+              {/each}
+            </div>
+          {/if}
+        </section>
+
+      </div>
+    {/if}
+  </main>
+
+  <!-- FOOTER -->
+  <Footer />
+
+  <!-- MOBILE BOTTOM NAVIGATION (PRD Section 50) -->
+  <div class="md:hidden sticky bottom-0 z-40 border-t backdrop-blur-xl px-4 py-2 flex items-center justify-around text-xs transition-colors {$isDarkMode ? 'bg-slate-950/90 border-slate-800 text-slate-300' : 'bg-white/90 border-slate-200 text-slate-600'}">
+    <button
+      on:click={() => { $activeToolSlug = null; $selectedCategory = 'all'; }}
+      class="flex flex-col items-center gap-0.5 {!$activeToolSlug ? 'text-indigo-600 dark:text-indigo-400 font-bold' : ''}"
+    >
+      <i class="ri-home-4-line text-lg"></i>
+      <span class="text-[10px]">Beranda</span>
+    </button>
+
+    <button
+      on:click={() => { $activeToolSlug = null; window.scrollTo({ top: 400, behavior: 'smooth' }); }}
+      class="flex flex-col items-center gap-0.5"
+    >
+      <i class="ri-grid-line text-lg"></i>
+      <span class="text-[10px]">Tools</span>
+    </button>
+
+    <button
+      on:click={() => { $activeToolSlug = 'qr-generator'; }}
+      class="flex flex-col items-center gap-0.5 {$activeToolSlug === 'qr-generator' ? 'text-indigo-600 dark:text-indigo-400 font-bold' : ''}"
+    >
+      <i class="ri-qr-code-line text-lg"></i>
+      <span class="text-[10px]">QR Code</span>
+    </button>
+
+    <button
+      on:click={() => { $activeToolSlug = 'image-compressor'; }}
+      class="flex flex-col items-center gap-0.5 {$activeToolSlug === 'image-compressor' ? 'text-indigo-600 dark:text-indigo-400 font-bold' : ''}"
+    >
+      <i class="ri-file-reduce-line text-lg"></i>
+      <span class="text-[10px]">Kompres</span>
+    </button>
   </div>
 
 </div>
-
-<style>
-  /* Menghapus tampilan default select pada browser tertentu */
-  select {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='rgba(128,128,128,0.5)'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 1.25rem center;
-    background-size: 1rem;
-  }
-
-  input[type="color"]::-webkit-color-swatch-wrapper {
-    padding: 0;
-  }
-  input[type="color"]::-webkit-color-swatch {
-    border: none;
-    border-radius: 14px;
-  }
-</style>

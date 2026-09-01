@@ -1,46 +1,98 @@
+# QuickTools — All-in-One Digital Tools & Productivity Platform
 
+> **"Satu website untuk semua kebutuhan tools digital sehari-hari."**
 
-This template should help get you started developing with Svelte in Vite.
+QuickTools adalah platform digital modular modern yang menyatukan beragam alat bantu (utilities) esensial dalam satu peramban web: konversi file, kompresi gambar, generator kode QR & barcode, manipulasi PDF, developer tools, security tools, kalkulator, dan konverter satuan.
 
-## Recommended IDE Setup
+Dibangun dengan arsitektur **Privacy-First (100% Client-Side Processing)** — file dan data sensitif pengguna diproses langsung di peramban lokal perangkat tanpa pernah disimpan atau dikirim ke server pihak ketiga.
 
-[VS Code](https://code.visualstudio.com/) + [Svelte](https://marketplace.visualstudio.com/items?itemName=svelte.svelte-vscode).
+---
 
-## Need an official Svelte framework?
+## 🚀 Fitur Utama & Kategori Tools
 
-Check out [SvelteKit](https://github.com/sveltejs/kit#readme), which is also powered by Vite. Deploy anywhere with its serverless-first approach and adapt to various platforms, with out of the box support for TypeScript, SCSS, and Less, and easily-added support for mdsvex, GraphQL, PostCSS, Tailwind CSS, and more.
+### 1. 📱 QR & Barcode Tools
+* **QR Code Generator**: Kustomisasi warna titik & latar, gaya membulat/persegi, logo custom di tengah, serta ekspor format PNG/SVG berkualitas tinggi. Mendukung URL, teks bebas, konfigurasi WiFi otomatis, direct WhatsApp, email, dan telepon.
+* **QR Code Scanner**: Pindai dan deteksi kode QR secara instan melalui webcam live atau unggah berkas foto.
+* **Barcode Generator**: Hasilkan barcode standar industri (CODE128, EAN-13, CODE39) dengan pratinjau dan unduh PNG.
 
-## Technical considerations
+### 2. 📄 PDF Tools
+* **Image to PDF**: Satukan beberapa foto JPG, PNG, atau WEBP menjadi satu dokumen PDF dengan pengaturan orientasi (Portrait/Landscape), margin, dan susun ulang halaman.
+* **Merge PDF**: Gabungkan banyak file PDF menjadi satu file secara berurutan dan cepat.
+* **Split & Extract PDF**: Ekstrak rentang halaman tertentu (misal `1-3, 5, 8-10`) dari dokumen PDF.
 
-**Why use this over SvelteKit?**
+### 3. 🖼️ Image Tools
+* **Image Compressor**: Kompresi ukuran berkas foto (JPG/PNG/WEBP) dengan pengatur kualitas visual interaktif dan perbandingan hemat ukuran (persentase).
+* **Image Converter**: Konversi instan antar format JPG, PNG, dan WEBP dengan dukungan transparansi.
+* **Image Resizer**: Ubah dimensi gambar dengan pengunci rasio aspek dan preset media sosial (Instagram, TikTok, YouTube).
+* **Rotate & Flip Image**: Putar 90°/180° dan balik cermin horizontal/vertikal secara langsung.
 
-- It brings its own routing solution which might not be preferable for some users.
-- It is first and foremost a framework that just happens to use Vite under the hood, not a Vite app.
+### 4. 💻 Developer Tools
+* **JSON Formatter & Validator**: Rapikan indentasi JSON (Beautify 2/4 spasi), kompres (Minify), dan validasi sintaks dengan deteksi pesan error.
+* **Base64 Encoder & Decoder**: Konversi teks dan berkas biner ke/dari format Base64.
+* **UUID / GUID Generator**: Hasilkan UUID v4 acak RFC4122 secara satuan atau massal (hingga 50) dengan kontrol huruf besar dan tanda hubung.
+* **Hash Generator**: Hitung nilai hash kriptografi SHA-256, SHA-512, SHA-1, dan MD5 menggunakan native Web Crypto API.
+* **JWT Decoder**: Uraikan Header & Payload token JSON Web Token beserta pemeriksaan masa berlaku (*expiration*).
+* **Unix Timestamp Converter**: Konversi bolak-balik antara waktu detik Epoch dan tanggal lokal/UTC serta jam live.
 
-This template contains as little as possible to get started with Vite + Svelte, while taking into account the developer experience with regards to HMR and intellisense. It demonstrates capabilities on par with the other `create-vite` templates and is a good starting point for beginners dipping their toes into a Vite + Svelte project.
+### 5. 🛡️ Security Tools
+* **Strong Password Generator**: Buat kata sandi acak berkekuatan tinggi dengan kontrol panjang, simbol, angka, huruf, serta kalkulasi entropi keamanan.
+* **Random String / Secret Generator**: Generator string rahasia dan token acak untuk API keys atau pengujian.
 
-Should you later need the extended capabilities and extensibility provided by SvelteKit, the template has been structured similarly to SvelteKit so that it is easy to migrate.
+### 6. ✍️ Text Tools
+* **Word & Character Counter**: Hitung kata, karakter (dengan/tanpa spasi), kalimat, paragraf, serta estimasi waktu membaca & berbicara.
+* **Case Converter**: Ubah format teks ke UPPERCASE, lowercase, Title Case, Sentence case, camelCase, PascalCase, snake_case, dan kebab-case.
+* **Remove Duplicate Lines**: Bersihkan baris teks duplikat dan urutkan secara abjad (A-Z / Z-A).
+* **Lorem Ipsum Generator**: Hasilkan teks dummy berdasarkan paragraf, kalimat, atau jumlah kata.
 
-**Why include `.vscode/extensions.json`?**
+### 7. 🧮 Kalkulator & Converter
+* **Kalkulator Persentase**: 3 mode esensial (Berapa X% dari Y, X berapa % dari Y, serta persentase kenaikan/penurunan).
+* **Kalkulator Usia**: Hitung usia detail (tahun, bulan, hari) dan hitung mundur menuju ulang tahun berikutnya.
+* **Unit Converter**: Konversi dua arah untuk Panjang, Berat, Suhu, dan Kapasitas Data Digital.
 
-Other templates indirectly recommend extensions via the README, but this file allows VS Code to prompt the user to install the recommended extension upon opening the project.
+### 8. 🎨 Desain & Web Tools
+* **Color Picker & Converter**: Pemilih warna visual dengan konversi nilai HEX, RGB, dan HSL serta salin kode.
+* **CSS Gradient Generator**: Buat gradasi warna linear/radial dengan sudut derajat interaktif dan salin kode CSS `background`.
+* **CSS Box Shadow Generator**: Rancang bayangan elemen (offset X/Y, blur, spread, inset) dengan live preview.
+* **URL Encoder & Decoder**: Enkripsi dan dekripsi karakter khusus URI.
+* **SEO Meta Tag Generator**: Buat tag meta Google dan Open Graph Facebook lengkap dengan simulasi preview.
 
-**Why enable `checkJs` in the JS template?**
+---
 
-It is likely that most cases of changing variable types in runtime are likely to be accidental, rather than deliberate. This provides advanced typechecking out of the box. Should you like to take advantage of the dynamically-typed nature of JavaScript, it is trivial to change the configuration.
+## 🛠️ Stack Teknologi
 
-**Why is HMR not preserving my local component state?**
+* **Framework:** [Svelte 5](https://svelte.dev/)
+* **Build Tool:** [Vite 8](https://vitejs.dev/)
+* **Styling:** [Tailwind CSS v4](https://tailwindcss.com/)
+* **Icons:** [RemixIcon](https://remixicon.com/)
+* **Libraries:** `qr-code-styling`, `jsPDF`, `pdf-lib` (lazy-loaded secara dinamis)
 
-HMR state preservation comes with a number of gotchas! It has been disabled by default in both `svelte-hmr` and `@sveltejs/vite-plugin-svelte` due to its often surprising behavior. You can read the details [here](https://github.com/sveltejs/svelte-hmr/tree/master/packages/svelte-hmr#preservation-of-local-state).
+---
 
-If you have state that's important to retain within a component, consider creating an external store which would not be replaced by HMR.
+## 📦 Menjalankan Project Secara Lokal
 
-```js
-// store.js
-// An extremely simple external store
-import { writable } from 'svelte/store'
-export default writable(0)
-```
-=======
-# QR_Genegator
->>>>>>> c36131fd9533a09edd208d7a65f3e17ab218f1e1
+1. **Clone repository:**
+   ```bash
+   git clone https://github.com/cloudy0903/QR_Genegator.git
+   cd Nextora
+   ```
+
+2. **Install dependensi:**
+   ```bash
+   npm install
+   ```
+
+3. **Jalankan development server:**
+   ```bash
+   npm run dev
+   ```
+
+4. **Build untuk produksi:**
+   ```bash
+   npm run build
+   ```
+
+---
+
+## 🔒 Privasi & Keamanan
+
+Semua tools digital yang tersedia di QuickTools berjalan langsung di browser pengguna (Client-Side). Dokumen, gambar, teks, dan berkas pribadi Anda tidak pernah dikirim atau disimpan di server mana pun.
