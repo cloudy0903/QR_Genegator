@@ -49,7 +49,11 @@
   import UrlEncoder from './web/UrlEncoder.svelte';
   import MetaTagGenerator from './web/MetaTagGenerator.svelte';
 
+  // Audio Tools
+  import YouTubeAudioConverter from './audio/YouTubeAudioConverter.svelte';
+
   const toolComponents = {
+    'youtube-audio-converter': YouTubeAudioConverter,
     'qr-generator': QrGenerator,
     'qr-scanner': QrScanner,
     'barcode-generator': BarcodeGenerator,

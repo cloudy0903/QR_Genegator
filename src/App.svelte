@@ -8,7 +8,7 @@
     recentTools,
     isDarkMode
   } from './stores/appStore.js';
-  import { CATEGORIES, TOOLS, searchTools, getCategoryById } from './tools/registry.js';
+  import { CATEGORIES, TOOLS, searchTools, getCategoryById, getToolBySlug } from './tools/registry.js';
 
   import Navbar from './components/Navbar.svelte';
   import Hero from './components/Hero.svelte';
@@ -44,6 +44,70 @@
       document.documentElement.classList.remove('dark');
     }
   }
+
+  // Sync route and metadata for SEO and direct links (PRD Section 5 & 15)
+  function updateRouteAndMetadata(slug) {
+    if (typeof window === 'undefined') return;
+
+    if (slug) {
+      const tool = getToolBySlug(slug);
+      if (slug === 'youtube-audio-converter') {
+        document.title = 'YouTube Audio Converter — Free Online Audio Tool';
+        const metaDesc = document.querySelector('meta[name="description"]');
+        if (metaDesc) {
+          metaDesc.setAttribute('content', 'Convert permitted video content to MP3 with a fast, privacy-focused browser-based audio converter.');
+        }
+      } else if (tool) {
+        document.title = `${tool.name} — QuickTools`;
+        const metaDesc = document.querySelector('meta[name="description"]');
+        if (metaDesc) {
+          metaDesc.setAttribute('content', tool.description);
+        }
+      }
+
+      const currentPath = window.location.pathname.replace(/^\/+/, '');
+      if (currentPath !== slug) {
+        window.history.pushState({ slug }, '', `/${slug}`);
+      }
+    } else {
+      document.title = 'QuickTools — All-in-One Digital Tools & Productivity Platform';
+      const metaDesc = document.querySelector('meta[name="description"]');
+      if (metaDesc) {
+        metaDesc.setAttribute('content', 'QuickTools adalah platform utility digital terlengkap: QR Code Generator & Scanner, Image Compressor & Converter, PDF Tools, Developer Tools, Password Generator, dan YouTube Audio Converter. 100% cepat & privat langsung di browser Anda.');
+      }
+      if (window.location.pathname !== '/' && window.location.pathname !== '') {
+        window.history.pushState({}, '', '/');
+      }
+    }
+  }
+
+  $: updateRouteAndMetadata($activeToolSlug);
+
+  onMount(() => {
+    // Check initial pathname or hash on load
+    const pathSlug = window.location.pathname.replace(/^\/+/, '');
+    const hashSlug = window.location.hash.replace(/^#+/, '');
+    const initialSlug = pathSlug || hashSlug;
+
+    if (initialSlug && TOOLS.some(t => t.slug === initialSlug)) {
+      $activeToolSlug = initialSlug;
+    }
+
+    // Handle browser back and forward buttons
+    const handlePopState = () => {
+      const currentSlug = window.location.pathname.replace(/^\/+/, '');
+      if (currentSlug && TOOLS.some(t => t.slug === currentSlug)) {
+        $activeToolSlug = currentSlug;
+      } else {
+        $activeToolSlug = null;
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  });
 </script>
 
 <div class="min-h-screen flex flex-col font-sans transition-colors duration-300 selection:bg-indigo-500/30 {$isDarkMode ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'}">

@@ -68,10 +68,52 @@ export const CATEGORIES = [
     description: 'URL encoder/decoder, meta tag generator, SEO tools',
     icon: 'ri-global-line',
     color: 'from-sky-500 to-cyan-600'
+  },
+  {
+    id: 'audio',
+    name: 'Audio Tools',
+    description: 'Konversi video & audio ke MP3, pemrosesan audio berkecepatan tinggi',
+    icon: 'ri-music-2-line',
+    color: 'from-rose-500 to-red-600'
   }
 ];
 
 export const TOOLS = [
+  // AUDIO TOOLS
+  {
+    id: 'youtube-audio-converter',
+    slug: 'youtube-audio-converter',
+    name: 'YouTube Audio Converter',
+    category: 'audio',
+    description: 'Convert permitted video content into high-quality audio directly in your browser.',
+    icon: 'ri-music-2-line',
+    processing_type: 'client',
+    is_popular: true,
+    is_featured: true,
+    synonyms: ['youtube', 'yt audio', 'mp3 converter', 'convert youtube', 'audio converter', 'video to mp3', 'yt to mp3', 'youtube mp3', 'audio', 'sound'],
+    faq: [
+      {
+        q: 'Is this tool free?',
+        a: 'Yes, the tool is designed to be free to use.'
+      },
+      {
+        q: 'Are my files uploaded?',
+        a: 'Local files should be processed directly in the browser whenever technically possible.'
+      },
+      {
+        q: 'Do I need to install software?',
+        a: 'No installation should be required.'
+      },
+      {
+        q: 'Can I convert any YouTube video?',
+        a: 'Only content that you own, have permission to use, or that is explicitly available for download should be processed.'
+      },
+      {
+        q: 'Where are my files stored?',
+        a: 'Local files processed client-side remain on your device and are not permanently stored by the website.'
+      }
+    ]
+  },
   // QR & BARCODE
   {
     id: 'qr-generator',

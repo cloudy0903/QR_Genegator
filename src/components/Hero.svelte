@@ -107,7 +107,7 @@
     <!-- QUICK SEARCH TAGS -->
     <div class="mt-4 flex flex-wrap items-center justify-center gap-2 text-xs text-slate-500 dark:text-slate-400">
       <span class="font-medium text-slate-400">Paling dicari:</span>
-      {#each ['Compress Image', 'QR Generator', 'Image to PDF', 'JSON Formatter', 'Merge PDF', 'Password'] as tag}
+      {#each ['YouTube MP3', 'Compress Image', 'QR Generator', 'Image to PDF', 'JSON Formatter', 'Merge PDF', 'Password'] as tag}
         <button
           on:click={() => pickChip(tag)}
           class="px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800/80 hover:bg-indigo-100 dark:hover:bg-indigo-950/60 hover:text-indigo-600 dark:hover:text-indigo-300 transition-colors font-medium text-slate-600 dark:text-slate-300"
