@@ -35,6 +35,8 @@
   let conversionMessage = '';
   let conversionResult = null; // { blob, url, duration, sampleRate, channels, bitrate, size, filename }
 
+  let quickFileInput;
+
   // Cleanup object URL when component unmounts
   onDestroy(() => {
     if (conversionResult && conversionResult.url) {
@@ -87,12 +89,46 @@
     urlError = '';
   }
 
-  // --- Handler: Local File Selection ---
+  // --- Handler: Quick File Selection from Analyzed Card ---
+  function handleLanjutkanKonversi() {
+    if (conversionResult && conversionResult.url) {
+      downloadMp3();
+      return;
+    }
+    if (localFile) {
+      handleConvert(true);
+      return;
+    }
+    if (quickFileInput) {
+      quickFileInput.click();
+    }
+  }
+
+  async function handleQuickFileSelected(e) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 500 * 1024 * 1024) {
+      showToast('File melebihi batas ukuran maksimal (500 MB)', 'error');
+      return;
+    }
+
+    if (conversionResult && conversionResult.url) {
+      URL.revokeObjectURL(conversionResult.url);
+    }
+    conversionResult = null;
+    localFile = file;
+
+    // Auto-convert and immediately trigger download when complete!
+    await handleConvert(true);
+    e.target.value = '';
+  }
+
+  // --- Handler: Local File Selection via Dropzone ---
   function handleFileSelected(e) {
     const file = e.detail;
     if (!file) return;
 
-    // Reset previous conversion result
     if (conversionResult && conversionResult.url) {
       URL.revokeObjectURL(conversionResult.url);
     }
@@ -112,7 +148,7 @@
   }
 
   // --- Handler: Convert File to MP3 ---
-  async function handleConvert() {
+  async function handleConvert(autoDownload = false) {
     if (!localFile) {
       showToast('Silakan pilih file media terlebih dahulu.', 'error');
       return;
@@ -121,7 +157,7 @@
     isConverting = true;
     conversionStage = 'preparing';
     conversionPercent = 5;
-    conversionMessage = 'Mempersiapkan file...';
+    conversionMessage = 'Mempersiapkan file media...';
 
     try {
       const result = await convertMediaFileToMp3(localFile, selectedBitrate, (prog) => {
@@ -132,10 +168,9 @@
 
       const blobUrl = URL.createObjectURL(result.blob);
       
-      // Determine file name: use analyzed video title if available, otherwise original file name
+      // Determine filename: use analyzed video title if available, otherwise original file name
       let baseName = localFile.name.replace(/\.[^/.]+$/, "");
       if (analyzedVideo && analyzedVideo.title) {
-        // Sanitize video title for filename
         baseName = analyzedVideo.title.replace(/[/\\?%*:|"<>]/g, '-').slice(0, 100);
       }
 
@@ -151,6 +186,13 @@
       };
 
       showToast('Konversi audio ke MP3 berhasil diselesaikan!', 'success');
+
+      // Auto trigger download if requested
+      if (autoDownload) {
+        setTimeout(() => {
+          downloadMp3();
+        }, 150);
+      }
     } catch (err) {
       console.error(err);
       showToast(err.message || 'Terjadi kesalahan saat memproses audio.', 'error');
@@ -168,17 +210,18 @@
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    showToast('File MP3 berhasil diunduh ke perangkat Anda!', 'success');
-  }
-
-  // Scroll to local converter
-  function scrollToConverter() {
-    const el = document.getElementById('local-converter-section');
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth' });
-    }
+    showToast(`File MP3 "${conversionResult.filename}" berhasil diunduh!`, 'success');
   }
 </script>
+
+<!-- HIDDEN QUICK FILE INPUT -->
+<input
+  type="file"
+  bind:this={quickFileInput}
+  on:change={handleQuickFileSelected}
+  accept="video/*,audio/*,.mp4,.webm,.mov,.mkv,.wav,.m4a,.aac,.ogg,.flac,.mp3"
+  class="hidden"
+/>
 
 <ToolLayout slug="youtube-audio-converter">
   <div class="max-w-4xl mx-auto space-y-12">
@@ -219,9 +262,10 @@
             />
             {#if youtubeUrl}
               <button
+                type="button"
                 on:click={clearUrl}
                 aria-label="Hapus URL"
-                class="absolute inset-y-0 right-10 pr-2 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-sm"
+                class="absolute inset-y-0 right-10 pr-2 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-sm cursor-pointer"
               >
                 <i class="ri-close-circle-fill text-lg"></i>
               </button>
@@ -230,7 +274,7 @@
               type="button"
               on:click={handlePasteClipboard}
               title="Paste from clipboard"
-              class="absolute inset-y-0 right-0 pr-3 flex items-center text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700"
+              class="absolute inset-y-0 right-0 pr-3 flex items-center text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 cursor-pointer"
             >
               Paste
             </button>
@@ -277,9 +321,9 @@
       </div>
     </div>
 
-    <!-- HASIL ANALISIS URL (PRD Section 8) -->
+    <!-- HASIL ANALISIS URL (PRD Section 8, 9, 10) -->
     {#if analyzedVideo}
-      <div class="p-6 sm:p-8 rounded-3xl border border-indigo-200 dark:border-indigo-900/60 bg-gradient-to-b from-indigo-50/40 via-white to-white dark:from-indigo-950/30 dark:via-slate-900 dark:to-slate-900 shadow-sm space-y-6">
+      <div class="p-6 sm:p-8 rounded-3xl border border-indigo-200 dark:border-indigo-900/60 bg-gradient-to-b from-indigo-50/40 via-white to-white dark:from-indigo-950/30 dark:via-slate-900 dark:to-slate-900 shadow-sm space-y-6 animate-in fade-in duration-300">
         
         <div class="flex items-center justify-between border-b pb-4 border-slate-200 dark:border-slate-800">
           <div class="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold text-sm">
@@ -287,14 +331,15 @@
             <span>Hasil Analisis Video</span>
           </div>
           <button
+            type="button"
             on:click={() => analyzedVideo = null}
-            class="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 font-semibold"
+            class="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 font-semibold cursor-pointer"
           >
             Tutup
           </button>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
           <!-- THUMBNAIL -->
           <div class="md:col-span-5 relative rounded-2xl overflow-hidden shadow-md bg-slate-950 aspect-video group">
             <img
@@ -303,62 +348,133 @@
               class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               loading="lazy"
             />
-            <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex items-end p-3">
+            <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent flex items-end p-3">
               <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-black/80 text-white">
                 YouTube Video
               </span>
             </div>
           </div>
 
-          <!-- VIDEO METADATA -->
-          <div class="md:col-span-7 space-y-3">
-            <h3 class="font-extrabold text-base sm:text-lg text-slate-900 dark:text-white leading-snug line-clamp-2">
-              {analyzedVideo.title}
-            </h3>
-
-            <div class="flex flex-wrap items-center gap-3 text-xs text-slate-600 dark:text-slate-300">
-              <span class="inline-flex items-center gap-1 font-semibold text-slate-800 dark:text-slate-200">
-                <i class="ri-user-smile-line text-indigo-500"></i>
-                {analyzedVideo.author}
-              </span>
-              <span>•</span>
-              <span class="inline-flex items-center gap-1">
-                <i class="ri-music-2-line text-rose-500"></i>
-                MP3 Ready
-              </span>
-              <span>•</span>
-              <span class="text-emerald-600 dark:text-emerald-400 font-medium">
-                Pilihan Bitrate: 96 – 320 kbps
-              </span>
-            </div>
-
-            <!-- PRIVACY & COPYRIGHT NOTICE (PRD Section 4 & 11) -->
-            <div class="p-3.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-300 space-y-2">
-              <div class="flex items-start gap-2">
-                <i class="ri-shield-check-fill text-emerald-500 text-base shrink-0 mt-0.5"></i>
-                <div class="leading-relaxed">
-                  <strong>100% Client-Side Policy:</strong> Browser Anda memproses konversi secara lokal tanpa mengirim data pribadi ke server proxy. Jika Anda memiliki file rekaman/unduhan konten berizin ini, unggah di bawah untuk dikonversi menjadi MP3 secara instan.
-                </div>
+          <!-- VIDEO METADATA & CONVERSION ACTIONS -->
+          <div class="md:col-span-7 space-y-4">
+            <div>
+              <h3 class="font-extrabold text-base sm:text-lg text-slate-900 dark:text-white leading-snug line-clamp-2 mb-1.5">
+                {analyzedVideo.title}
+              </h3>
+              <div class="flex flex-wrap items-center gap-2.5 text-xs text-slate-600 dark:text-slate-300">
+                <span class="inline-flex items-center gap-1 font-semibold text-slate-800 dark:text-slate-200">
+                  <i class="ri-user-smile-line text-indigo-500"></i>
+                  {analyzedVideo.author}
+                </span>
+                <span>•</span>
+                <span class="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
+                  <i class="ri-checkbox-circle-line"></i>
+                  Audio Ready
+                </span>
               </div>
             </div>
 
-            <div>
-              <button
-                type="button"
-                on:click={scrollToConverter}
-                class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-600/20 active:scale-95 transition-all cursor-pointer"
+            <!-- QUALITY SELECTOR IN ANALYZED CARD (PRD Section 8) -->
+            <div class="space-y-1.5">
+              <label for="analyzed-bitrate" class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                Pilih Kualitas MP3 (Bitrate)
+              </label>
+              <select
+                id="analyzed-bitrate"
+                bind:value={selectedBitrate}
+                disabled={isConverting}
+                class="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >
-                <span>Lanjutkan Konversi File (MP3)</span>
-                <i class="ri-arrow-down-line"></i>
-              </button>
+                {#each bitrates as br}
+                  <option value={br.value}>{br.label} — {br.desc}</option>
+                {/each}
+              </select>
             </div>
+
+            <!-- CONVERTING PROGRESS BAR (PRD Section 9) -->
+            {#if isConverting}
+              <div class="p-4 rounded-2xl bg-indigo-50/80 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-900/60 space-y-2.5">
+                <div class="flex items-center justify-between text-xs font-bold text-indigo-700 dark:text-indigo-300">
+                  <span class="flex items-center gap-2">
+                    <i class="ri-loader-4-line animate-spin text-base"></i>
+                    <span>{conversionMessage}</span>
+                  </span>
+                  <span>{conversionPercent}%</span>
+                </div>
+                <div class="w-full h-2.5 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
+                  <div
+                    class="h-full bg-gradient-to-r from-indigo-500 via-violet-500 to-pink-500 transition-all duration-300 rounded-full"
+                    style="width: {conversionPercent}%"
+                  ></div>
+                </div>
+                <p class="text-[11px] text-slate-500 text-center">
+                  Mengonversi dan mengunduh MP3 otomatis ke browser Anda...
+                </p>
+              </div>
+
+            <!-- CONVERSION COMPLETE RESULT (PRD Section 10) -->
+            {:else if conversionResult}
+              <div class="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 space-y-3">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-300 font-bold text-xs sm:text-sm">
+                    <i class="ri-checkbox-circle-fill text-lg text-emerald-500"></i>
+                    <span>Konversi Selesai! File Tersedia</span>
+                  </div>
+                  <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200">
+                    MP3 • {conversionResult.bitrate} kbps
+                  </span>
+                </div>
+
+                <!-- AUDIO PLAYER PREVIEW -->
+                <div>
+                  <!-- svelte-ignore a11y_media_has_caption -->
+                  <audio src={conversionResult.url} controls class="w-full h-9 rounded-lg"></audio>
+                </div>
+
+                <div class="flex flex-col sm:flex-row gap-2 pt-1">
+                  <button
+                    type="button"
+                    on:click={downloadMp3}
+                    class="flex-1 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-md shadow-emerald-600/25 active:scale-95 transition-all cursor-pointer"
+                  >
+                    <i class="ri-download-2-fill text-base"></i>
+                    <span>Download MP3 ({formatBytes(conversionResult.size)})</span>
+                  </button>
+                  <button
+                    type="button"
+                    on:click={() => quickFileInput && quickFileInput.click()}
+                    class="px-3.5 py-3 rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 font-semibold text-xs transition-colors cursor-pointer"
+                  >
+                    Ganti File
+                  </button>
+                </div>
+              </div>
+
+            <!-- DEFAULT ACTION: DIRECT CONVERT & DOWNLOAD BUTTON -->
+            {:else}
+              <div class="space-y-3">
+                <button
+                  type="button"
+                  on:click={handleLanjutkanKonversi}
+                  class="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white text-sm font-extrabold shadow-lg shadow-indigo-600/25 active:scale-95 transition-all cursor-pointer"
+                >
+                  <i class="ri-download-2-fill text-lg"></i>
+                  <span>Lanjutkan Konversi File (MP3)</span>
+                </button>
+
+                <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                  💡 Klik tombol di atas untuk memilih file media Anda (MP4, WebM, M4A, MOV, dll) — sistem akan <strong>langsung mengonversi dan mengunduh MP3</strong> otomatis ke perangkat Anda.
+                </p>
+              </div>
+            {/if}
+
           </div>
         </div>
 
       </div>
     {/if}
 
-    <!-- CONVERT LOCAL FILE MODE (PRD Section 11 - Core Client-Side Engine) -->
+    <!-- CONVERT LOCAL FILE MODE (PRD Section 11 - Standalone & Dropzone) -->
     <div id="local-converter-section" class="p-6 sm:p-8 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm space-y-6">
       
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b pb-4 border-slate-100 dark:border-slate-800">
@@ -470,11 +586,11 @@
           {#if !isConverting && !conversionResult}
             <button
               type="button"
-              on:click={handleConvert}
+              on:click={() => handleConvert(true)}
               class="w-full py-4 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-xl shadow-indigo-600/25 active:scale-[0.98] transition-all cursor-pointer"
             >
               <i class="ri-sparkling-fill text-lg"></i>
-              <span>Konversi Sekarang ke MP3 ({selectedBitrate} kbps)</span>
+              <span>Konversi Sekarang ke MP3 & Download ({selectedBitrate} kbps)</span>
             </button>
           {/if}
 
